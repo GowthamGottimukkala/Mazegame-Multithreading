@@ -10,7 +10,11 @@ screen.bgcolor("black")
 screen.title("Maze Game")
 screen.setup(1000,1000)
 w,e,n,s = (0,-1),(0,1),(-1,0),(1,0)
-quadrants = [[1,1],[-1,1],[-1,-1],[1,-1]]
+quadrants = [[-1,1],[1,1],[-1,-0.7],[1,-0.7]]
+printing = [[-1,1],[1,1],[-1,-0.85],[1,-0.85]]
+printing2 = [[-1,1],[1,1],[-1,-0.85],[1,-0.85]]
+sem = threading.Semaphore()
+
 answers = []
 myPen = []
 rewards = []
@@ -18,26 +22,46 @@ previous = []
 for p in range(number):
     previous.append([])
 colors = ["blue","green","orange","cyan"]
+text = turtle.Turtle()
+savepoint = []
+treasurecoord = []
 
 def setupmaze(mainmaze,dic,i):
-    treasurecoord = []
+    global treasurecoord,savepoint
+    print(savepoint)
+    print(treasurecoord)
+    text.color('deep pink')
+    style = ('Courier', 30, 'italic')
+    text.penup()
+    x = printing[i][0] * 250
+    y = printing[i][1] * 400
+    text.goto(x,y)
+    text.pendown()
+    text.write('User-' + str(i), font=style, align='center')
+    text.hideturtle()
     for y in range(len(mainmaze)):
         for x in range(len(mainmaze[y])):
             character = mainmaze[y][x]
-            screen_x = -96+(x*24) + quadrants[i][0]*250
-            screen_y = 96-(y*24) + quadrants[i][1]*250
+            screen_x = -140+(x*24) + quadrants[i][0]*250
+            screen_y = 140-(y*24) + quadrants[i][1]*250
             if(character==1):
                 pen[i].goto(screen_x,screen_y)
                 pen[i].stamp()
             elif(character==0):
-                treasurecoord.append([y,x])
+                if(i==0):
+                    treasurecoord.append([y,x])
     # Treasures
-    treasurecoord = random.sample(treasurecoord,5)
+    if(i==0):
+        treasurecoord = random.sample(treasurecoord,5)
     treasurepoint = [-10,-20,-30,-100]
-    for element in treasurecoord:
-        mainmaze[element[0]][element[1]] = random.choice(treasurepoint)
-        screen_x = -96+(element[1]*24)+ quadrants[i][0]*250
-        screen_y = 96-(element[0]*24)+ quadrants[i][1]*250
+    for l,element in enumerate(treasurecoord):
+        if(i==0):
+            savepoint.append(random.choice(treasurepoint))
+            mainmaze[element[0]][element[1]] = savepoint[-1]
+        else:
+            mainmaze[element[0]][element[1]] = savepoint[l]
+        screen_x = -140+(element[1]*24)+ quadrants[i][0]*250
+        screen_y = 140-(element[0]*24)+ quadrants[i][1]*250
         pen[i].shape("circle")
         pen[i].shapesize(0.5,0.5,0.5)
         pen[i].color("yellow")
@@ -74,9 +98,25 @@ def maker(maze,pos,k,dic):
         east = tuple(map(sum, zip(pos, e)))
 
         if(pos==(len(maze)-1,len(maze)-1)):
-            print("User-",k, "ended")
+            print(colors[k],"completed")
             maze[pos[0]][pos[1]] = 9     
-            answers.append(maze)
+            sem.acquire()            
+            style = ('Courier', 20, 'italic')
+            text.penup()
+            x = printing2[k][0] * 250
+            y = printing2[k][1] * 440 if k > 1 else 90
+            text.goto(x,y)
+            text.pendown()
+            style = ('Courier', 20, 'italic')
+            text.write( "User " + str(k) + " got " + str(rewards[k][1]) + " points",font=style, align='center')
+            text.penup()
+            x = printing2[k][0] * 250
+            y = printing2[k][1] * 480 if k > 1 else 60
+            text.goto(x,y)
+            text.pendown()
+            text.write( "No.of Demons faced - " + str(rewards[k][2]),font=style, align='center')
+            text.hideturtle()
+            sem.release()
             print(rewards[k])
             return
         lis = []
@@ -118,7 +158,8 @@ def maker(maze,pos,k,dic):
                 temp = pos
                 pos = previous[k][-1]
                 if(check==0):
-                    rewards[k][1] = rewards[k][1] - 5 # Demon Attacked OMFG
+                    print("A Demon attacked",colors[k])
+                    rewards[k][1] = rewards[k][1] - 10 # Demon Attacked
                     rewards[k][2] = rewards[k][2] + 1
                     myPen[k].turtlesize(1.5,1.5,1.5)
                     myPen[k].color("red")
@@ -163,9 +204,9 @@ pen = []
 mazes = []
 for i in range(u):
     pen.append(turtle.Turtle())
+    pen[i].penup()
     pen[i].shape("square")
     pen[i].color("white")
-    pen[i].penup()
     pen[i].speed(0)
     mazes.append([[mainmaze[x][y] for y in range(len(mainmaze[0]))] for x in range(len(mainmaze))])
     setupmaze(mazes[i],dic[i],i)
@@ -176,7 +217,7 @@ root = mtTkinter.Tk()
 for i in range(u):  
     myPen.append(turtle.Turtle())
     myPen[i].penup() 
-    myPen[i].goto(-96+ quadrants[i][0]*250,96+ quadrants[i][1]*250)
+    myPen[i].goto(-140+ quadrants[i][0]*250,140+ quadrants[i][1]*250)
     myPen[i].pendown()
     myPen[i].shape('circle')
     myPen[i].color(colors[i])
